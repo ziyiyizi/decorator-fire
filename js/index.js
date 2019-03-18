@@ -490,6 +490,7 @@ function handleStateChange(state, prevState) {
 	
 	if (canPlaySound !== canPlaySoundPrev) {
 		if (canPlaySound) {
+			soundManager.playSound("background");
 			soundManager.resumeAll();
 		} else {
 			soundManager.pauseAll();
@@ -901,6 +902,8 @@ function init() {
 	
 	// Apply initial config
 	configDidUpdate();
+	
+	
 }
 
 
@@ -2254,10 +2257,18 @@ const soundManager = {
 			fileNames: ['crackle1.mp3']
 		},
 		crackleSmall: {
-			volume: 0.3,
+			volume: 0.25,
 			playbackRateMin: 1,
 			playbackRateMax: 1,
 			fileNames: ['crackle-sm-1.mp3']
+		},
+		background: {
+			volume: 0.4,
+			playbackRateMin: 1,
+			playbackRateMax: 1,
+			fileNames: ['hana.mp3'],
+			state: false
+			
 		}
 	},
 
@@ -2333,6 +2344,8 @@ const soundManager = {
 	 *                             Note that a scale of 0 will mute the sound.
 	 */
 	playSound(type, scale=1) {
+		
+		
 		// Ensure `scale` is within valid range.
 		scale = MyMath.clamp(scale, 0, 1);
 
@@ -2358,6 +2371,18 @@ const soundManager = {
 			throw new Error(`Sound of type "${type}" doesn't exist.`);
 		}
 		
+		const bufferSource = this.ctx.createBufferSource();
+		
+		if(type === 'background'){
+			
+			if(source.state == true){
+				return;
+			} else {
+				bufferSource.loop = true;
+				source.state = true;
+			}
+		}
+		
 		const initialVolume = source.volume;
 		const initialPlaybackRate = MyMath.random(
 			source.playbackRateMin,
@@ -2374,11 +2399,14 @@ const soundManager = {
 		gainNode.gain.value = scaledVolume;
 
 		const buffer = MyMath.randomChoice(source.buffers);
-		const bufferSource = this.ctx.createBufferSource();
+		
+		
 		bufferSource.playbackRate.value = scaledPlaybackRate;
 		bufferSource.buffer = buffer;
 		bufferSource.connect(gainNode);
 		gainNode.connect(this.ctx.destination);
+		
+		
 		bufferSource.start(0);
 	}
 };
