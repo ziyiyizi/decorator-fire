@@ -5,7 +5,6 @@
 'use strict';
 console.clear();
 
-//let words = ['测', '试', '用', '╮(╯▽╰)╭'];
 let words = [''];
 let wordPos = 0;
 const IS_MOBILE = window.innerWidth <= 640;
@@ -76,18 +75,6 @@ const stages = [
 	mainStage
 ];
 
-
-function changeText(text) {
-	
-	let mwords = text.value;
-	if(mwords == ''){
-		words = [''];
-	} else{
-		words = mwords.split('');
-	}
-	
-
-}
 // Fullscreen helpers, using Fscreen for prefixes.
 function fullscreenEnabled() {
 	return fscreen.fullscreenEnabled;
@@ -115,8 +102,6 @@ function toggleFullscreen() {
 fscreen.addEventListener('fullscreenchange', () => {
 	store.setState({ fullscreen: isFullscreen() });
 });
-
-
 
 
 // Simple state container; the source of truth.
@@ -150,14 +135,21 @@ const store = {
 			longExposure: false,
 			scaleFactor: getDefaultScaleFactor(),
 			
-			outputText:'测试用例',
-			enableText:true,
+			outputText:'Happy',
+			fontSize: '40',
+			fontFamily: 'benmoyouyuan',
 		}
 	},
 	
 	setState(nextState) {
 		const prevState = this.state;
 		this.state = Object.assign({}, this.state, nextState);
+		
+		if(this.state.config.outputText == '' || this.state.config.outputText == undefined){
+			words = [''];
+		} else {
+			words = this.state.config.outputText.split('');
+		}
 		this._dispatch(prevState);
 		this.persist();
 	},
@@ -183,12 +175,17 @@ const store = {
 					config.quality = data.quality;
 					config.size = data.size;
 					config.skyLighting = data.skyLighting;
+					config.fontSize = data.fontSize;
+					config.fontFamily = data.fontFamily;
 					break;
 				case '1.2':
 					config.quality = data.quality;
 					config.size = data.size;
 					config.skyLighting = data.skyLighting;
 					config.scaleFactor = data.scaleFactor;
+					config.fontSize = data.fontSize;
+					config.fontFamily = data.fontFamily;
+					
 					break;
 				default:
 					throw new Error('version switch should be exhaustive');
@@ -224,7 +221,10 @@ const store = {
 				quality: config.quality,
 				size: config.size,
 				skyLighting: config.skyLighting,
-				scaleFactor: config.scaleFactor
+				scaleFactor: config.scaleFactor,
+				fontSize: config.fontSize,
+				fontFamily: config.fontFamily
+
 			}
 		}));
 	}
@@ -310,9 +310,8 @@ const finaleSelector = () => store.state.config.finale;
 const skyLightingSelector = () => +store.state.config.skyLighting;
 const scaleFactorSelector = () => store.state.config.scaleFactor;
 
-const enableTextSelector = () => store.state.config.enableText;
-
-
+const fontSizeSelector = () => store.state.config.fontSize;
+const fontFamilySelector = () => store.state.config.fontFamily;
 
 // Help Content
 const helpContent = {
@@ -339,6 +338,14 @@ const helpContent = {
 	outputText: {
 		header: 'Output Text',
 		body: 'Allows changing the words which appears when the shell burst. You can set empty to unenable the words.'
+	},
+	fontSize: {
+		header: 'fontSize',
+		body: 'Allows changing font size of outputText.'
+	},
+	fontFamily: {
+		header: 'fontFamily',
+		body: 'Allows changing the font type of outputText.'
 	},
 	autoLaunch: {
 		header: 'Auto Fire',
@@ -369,6 +376,8 @@ const nodeKeyToHelpKey = {
 	skyLightingLabel: 'skyLighting',
 	scaleFactorLabel: 'scaleFactor',
 	outputTextLabel: 'outputText',
+	fontSizeLabel: 'fontSize',
+	fontFamilyLabel: 'fontFamily',
 	autoLaunchLabel: 'autoLaunch',
 	finaleModeLabel: 'finaleMode',
 	hideControlsLabel: 'hideControls',
@@ -394,6 +403,10 @@ const appNodes = {
 	shellSizeLabel: '.shell-size-label',
 	outputText: '.output-text',
 	outputTextLabel: '.output-text-label',
+	fontSize: '.font-size',
+	fontSizeLabel: '.font-size-label',
+	fontFamily: '.font-family',
+	fontFamilyLabel: '.font-family-label',
 	quality: '.quality-ui',
 	qualityLabel: '.quality-ui-label',
 	skyLighting: '.sky-lighting',
@@ -448,6 +461,9 @@ function renderApp(state) {
 	appNodes.shellType.value = state.config.shell;
 	appNodes.shellSize.value = state.config.size;
 	appNodes.autoLaunch.checked = state.config.autoLaunch;
+	appNodes.outputText.value = state.config.outputText;
+	appNodes.fontSize.value = state.config.fontSize;
+	appNodes.fontFamily.value = state.config.fontFamily;
 	appNodes.finaleMode.checked = state.config.finale;
 	appNodes.skyLighting.value = state.config.skyLighting;
 	appNodes.hideControls.checked = state.config.hideControls;
@@ -489,6 +505,9 @@ function getConfigFromDOM() {
 		quality: appNodes.quality.value,
 		shell: appNodes.shellType.value,
 		size: appNodes.shellSize.value,
+		outputText: appNodes.outputText.value,
+		fontSize: appNodes.fontSize.value,
+		fontFamily: appNodes.fontFamily.value,
 		autoLaunch: appNodes.autoLaunch.checked,
 		finale: appNodes.finaleMode.checked,
 		skyLighting: appNodes.skyLighting.value,
@@ -504,6 +523,8 @@ appNodes.quality.addEventListener('input', updateConfigNoEvent);
 appNodes.shellType.addEventListener('input', updateConfigNoEvent);
 appNodes.shellSize.addEventListener('input', updateConfigNoEvent);
 appNodes.outputText.addEventListener('input', updateConfigNoEvent);
+appNodes.fontSize.addEventListener('input', updateConfigNoEvent);
+appNodes.fontFamily.addEventListener('input', updateConfigNoEvent);
 appNodes.autoLaunch.addEventListener('click', () => setTimeout(updateConfig, 0));
 appNodes.finaleMode.addEventListener('click', () => setTimeout(updateConfig, 0));
 appNodes.skyLighting.addEventListener('input', updateConfigNoEvent);
@@ -843,6 +864,15 @@ function init() {
 	options = '';
 	['3"', '4"', '6"', '8"', '12"', '16"'].forEach((opt, i) => options += `<option value="${i}">${opt}</option>`);
 	appNodes.shellSize.innerHTML = options;
+	
+	options = '';
+	['20', '30', '40', '50', '60'].forEach((opt, i) => options += `<option value="${opt}">${opt}</option>`);
+	appNodes.fontSize.innerHTML = options;
+	
+	options = '';
+	['benmoyouyuan', 'GospelStd', 'hanyimutou', 'Wawati SC', 'Russo One'].forEach((opt, i) => options += `<option value="${opt}">${opt}</option>`);
+	appNodes.fontFamily.innerHTML = options;
+	
 	
 	setOptionsForSelect(appNodes.quality, [
 		{ label: 'Low', value: QUALITY_LOW },
@@ -1412,6 +1442,7 @@ function render(speed) {
 	const height = stageH;
 	const trailsCtx = trailsStage.ctx;
 	const mainCtx = mainStage.ctx;
+
 	
 	if (skyLightingSelector() !== SKY_LIGHT_NONE) {
 		colorSky(speed);
@@ -1470,18 +1501,26 @@ function render(speed) {
 				mainCtx.moveTo(star.x, star.y);
 				mainCtx.lineTo(star.x - star.speedX * 1.6, star.y - star.speedY * 1.6);
 			
-				var nowOpa = trailsCtx.opacity;
-				if(star.isSpart && star.wordPos != undefined){
-					trailsCtx.font = "40px Wawati SC";
+
+				if(star.isSpart && star.wordPos != undefined && Math.random() > 0.99){
 					
-					trailsCtx.opacity = nowOpa / 4;
-					trailsCtx.strokeText(words[(star.wordPos) % words.length], star.startX - 20, star.startY + 20);
-					trailsCtx.opacity = nowOpa;
+					var fontSize = store.state.config.fontSize;
+					var fontSizeInt = parseInt(fontSize)/2;
 					
+					trailsCtx.font = fontSize + 'px ' + store.state.config.fontFamily;
+					trailsCtx.fontWeight = 'lighter';
+					
+					trailsCtx.strokeText(words[(star.wordPos) % words.length], star.startX - fontSizeInt, star.startY + fontSizeInt);
+
 				}	
 			}
 		});
-		trailsCtx.stroke();
+		if(Math.random() > 0.5){
+			trailsCtx.stroke();
+		}
+
+//		trailsCtx.stroke();
+		
 
 	});
 	mainCtx.stroke();
@@ -1758,8 +1797,6 @@ class Shell {
 		// Magic numbers came from testing.
 		const launchVelocity = Math.pow(launchDistance * 0.04, 0.64);
 		
-		console.log("launch X-Y:", launchX, launchY);
-		
 		const comet = this.comet = Star.add(
 			launchX,
 			launchY,
@@ -1864,8 +1901,6 @@ class Shell {
 			sparkLife = 1400;
 			sparkLifeVariation = 3.8;
 		}
-		
-		console.log("burst!X-Y", x, y);
 		
 		// Apply quality to spark count
 		sparkFreq = sparkFreq / quality;
